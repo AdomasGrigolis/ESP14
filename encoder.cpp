@@ -2,7 +2,7 @@
 #include <QEI.h>
 
 const float ENCODER_MEASURE_PERIOD = 1.0f;//Encoder pulses are checked every 1 second
-const int NO_PULS_PER_REV = 256;//Pulses per revolution (256?)
+const int NO_PULS_PER_REV = 1024;//Pulses per revolution (256*4)
 const float WHEEL_CIRCUMFERENCE = 276.46f;//In milimetres
 volatile double R_dx = 0;//Wheel linear distance driven mm
 volatile double L_dx = 0;
