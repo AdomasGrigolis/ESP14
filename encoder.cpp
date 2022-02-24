@@ -19,7 +19,9 @@ class TickingEncoder : public QEI {
         {
             tick_enc.attach(callback(this, &TickingEncoder::enc_isr), ENCODER_MEASURE_PERIOD);
         }
-        //Return 
+        //Selectors
         int get_speed(){return pulses/(44*WHEEL_CIRCUMFERENCE)*ENCODER_MEASURE_PERIOD;}
         int get_dx(){return dx;}
+        //Modifiers
+        void zero_dx(){dx=0;}
 };
