@@ -1,3 +1,6 @@
+//Use these object in the main code
+//QEI* wheel_left = new TickingEncoder(D8, D9, NC);
+//QEI* wheel_right = new TickingEncoder(D10, D11, NC);
 #include <QEI.h>
 
 #define WHEEL_CIRCUMFERENCE 276.46f//In milimetres
