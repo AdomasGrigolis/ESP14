@@ -5,7 +5,7 @@
 #define STATIONARY_DUTY_CYCLE 0.5f
 #define STARDARD_MOVEMENT_SPEED 0.5f
 //Pins
-#define ENABLE_PIN PC_14
+#define ENABLE_PIN PA_13
 #define BIPOLAR1_PIN PH_1
 #define BIPOLAR2_PIN PH_0
 #define PWM_PIN1 PB_7
