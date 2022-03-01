@@ -90,4 +90,9 @@ public:
             break;
         }
     }
+    void turn180Degrees()
+    {
+       setMotorSpeeds(1.0f, 0.0f);
+            wait(0.1); 
+    }
 };
