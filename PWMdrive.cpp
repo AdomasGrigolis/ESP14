@@ -1,24 +1,26 @@
-//    Car car();
-//    car.startMovingForward();
+//Car car;
+//car.startMovingForward();
 #include "mbed.h"
-#define FREQUENCY 18000.0f
+#define FREQUENCY 18000.0f//Above audible range
 #define STATIONARY_DUTY_CYCLE 0.5f
 #define STARDARD_MOVEMENT_SPEED 0.5f
-#define ENABLE_PIN
-#define BIPOLAR1_PIN
-#define BIPOLAR2_PIN
-float PERIOD = 1.0/FREQUENCY;
+//Pins
+#define ENABLE_PIN PC_14
+#define BIPOLAR1_PIN PH_1
+#define BIPOLAR2_PIN PH_0
+#define PWM_PIN1 PB_7
+#define PWM_PIN2 PA_15
+
+double PERIOD = 1.0/FREQUENCY;//Period for PWM signal
 //Enable the Motor Driveboard
 DigitalOut Enable_Driveboard(ENABLE_PIN);
 
 //Use bipolar mode
 DigitalOut Bipolar_1(BIPOLAR1_PIN);
 DigitalOut Bipolar_2(BIPOLAR2_PIN);
-DigitalOut Direction_1(D0);
-DigitalOut Direction_2(D1);
 
-PwmOut Motor_1(D5);
-PwmOut Motor_2(D6);
+PwmOut Motor_1(PWM_PIN1);
+PwmOut Motor_2(PWM_PIN2);
 
 enum Turn
 {
@@ -65,26 +67,27 @@ public:
     
     void startMovingForward()
     {
-        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        this->setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
     }
 
     void stop()
     {
-        setMotorSpeeds(0.0f, 0.0f);
+        this->setMotorSpeeds(0.0f, 0.0f);
     }
 
     void turn90Degrees(Turn t)
     {
-        switch(t)
+        switch(t){
         case LEFT:
-            setMotorSpeeds(0.0f, STARDARD_MOVEMENT_SPEED);
+            this->setMotorSpeeds(0.0f, STARDARD_MOVEMENT_SPEED);
             wait(0.1);
-            startMovingForward();
+            this->startMovingForward();
             break;
         case RIGHT:
-            setMotorSpeeds(STARDARD_MOVEMENT_SPEED, 0.0f);
+            this->setMotorSpeeds(STARDARD_MOVEMENT_SPEED, 0.0f);
             wait(0.1);
-            startMovingForward();
+            this->startMovingForward();
             break;
+        }
     }
 };
