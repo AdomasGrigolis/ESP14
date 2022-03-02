@@ -4,7 +4,7 @@
 #define BUGGY_WIDTH 190//distance between two wheels of buggy is 190 mm
 #define Pi 3.1415
 //turning_circule perimeter for 360 degrees
-const float TURNING_CIRCLE = Pi*BUGGY_WIDTH*2.00f;
+const float TURNING_CIRCLE = Pi*BUGGY_WIDTH*2.0f;
 //arc length for 90 degrees
 const float quarter_circle = TURNING_CIRCLE/4.00f;
 //arc length for 180 degress
@@ -76,7 +76,8 @@ int main(void){
             case turning180:
             {
                 car.turn180Degrees();
-                if(wheel_left->get_dx() > half_circle) 
+                if(wheel_left->get_dx() > half_circle)
+                    state = driving_initialisation; 
                 break;    
             }
             case finish:
