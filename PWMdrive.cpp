@@ -86,4 +86,10 @@ public:
             break;
         }
     }
+    void turn180Degrees()
+    {
+        this->setMotorSpeeds(1.0f, -1.0f);
+        wait(0.1);
+        this->startMovingForward();
+    }
 };
