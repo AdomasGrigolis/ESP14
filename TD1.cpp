@@ -4,11 +4,11 @@
 #define BUGGY_WIDTH 190//distance between two wheels of buggy is 190 mm
 #define Pi 3.1415
 //turning_circule perimeter for 360 degrees
-const float TURNING_CIRCLE = Pi*BUGGY_WIDTH*2.00;
+const float TURNING_CIRCLE = Pi*BUGGY_WIDTH*2.00f;
 //arc length for 90 degrees
-const float quarter_circle = TURNING_CIRCLE/4.00;
+const float quarter_circle = TURNING_CIRCLE/4.00f;
 //arc length for 180 degress
-const float half_circle = TURNING_CIRCLE/2.00;
+const float half_circle = TURNING_CIRCLE/2.00f;
 
 Car car;
 float volatile curr_pos;
