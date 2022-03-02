@@ -77,12 +77,10 @@ public:
         case LEFT:
             this->setMotorSpeeds(0.0f, STARDARD_MOVEMENT_SPEED);
             wait(0.1);
-            this->startMovingForward();
             break;
         case RIGHT:
             this->setMotorSpeeds(STARDARD_MOVEMENT_SPEED, 0.0f);
             wait(0.1);
-            this->startMovingForward();
             break;
         }
     }
@@ -90,6 +88,5 @@ public:
     {
         this->setMotorSpeeds(1.0f, -1.0f);
         wait(0.1);
-        this->startMovingForward();
     }
 };
