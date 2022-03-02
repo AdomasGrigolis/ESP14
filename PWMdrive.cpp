@@ -1,19 +1,17 @@
-//Car car;
-//car.startMovingForward();
 #include "mbed.h"
 #define FREQUENCY 18000.0f//Above audible range
 #define STATIONARY_DUTY_CYCLE 0.5f
 #define STARDARD_MOVEMENT_SPEED 0.5f
 //Pins
-#define ENABLE_PIN PA_13
+#define ENABLE_PIN_OUR PA_13//Do not use ENABLE_PIN as it's already used in mbed
 #define BIPOLAR1_PIN PH_1
 #define BIPOLAR2_PIN PH_0
 #define PWM_PIN1 PB_7
 #define PWM_PIN2 PA_15
 
-double PERIOD = 1.0/FREQUENCY;//Period for PWM signal
+double PERIOD = 1.0f/FREQUENCY;//Period for PWM signal
 //Enable the Motor Driveboard
-DigitalOut Enable_Driveboard(ENABLE_PIN);
+DigitalOut Enable_Driveboard(ENABLE_PIN_OUR);
 
 //Use bipolar mode
 DigitalOut Bipolar_1(BIPOLAR1_PIN);
@@ -37,12 +35,10 @@ private:
 public:
     Car()
     {
-        //Enable the motor driveboard
-        Enable_Driveboard = 1;
+        Enable_Driveboard = 1;//Enable the motor driveboard
         //Use Bipolar mode
         Bipolar_1 = 1;
         Bipolar_2 = 1;
-        wait(0.4);
         //For A stationary motor requires exactly 50% duty cycle.
         Motor_1.period(PERIOD);
         Motor_2.period(PERIOD);
@@ -54,9 +50,9 @@ public:
     // 0 stalls                               == 0.5 duty cycle  
     void setMotorSpeeds(float new_motor1_speed, float new_motor2_speed)
     {
-        duty_cycle_1 = convertSpeedToDutyCycle(new_motor1_speed);
+        duty_cycle_1 = this->convertSpeedToDutyCycle(new_motor1_speed);
         Motor_1.write(duty_cycle_1);
-        duty_cycle_2 = convertSpeedToDutyCycle(new_motor2_speed);
+        duty_cycle_2 = this->convertSpeedToDutyCycle(new_motor2_speed);
         Motor_2.write(duty_cycle_2);
     }
 
@@ -89,10 +85,5 @@ public:
             this->startMovingForward();
             break;
         }
-    }
-    void turn180Degrees()
-    {
-       setMotorSpeeds(1.0f, 0.0f);
-            wait(0.1); 
     }
 };
