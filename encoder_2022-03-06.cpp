@@ -19,7 +19,7 @@ class TickingEncoder : public QEI {
     private:
         Ticker tick_enc;
         volatile int encoder_pulses, last_pulses, current_pulses,;
-        volatile double dx, current_speed, total distance;
+        volatile double dx, current_speed, total_distance;
 		void enc_isr()
 		{//Called to fetch encoder data by tick_enc
 			encoder_pulses = encoder.getPulses();
