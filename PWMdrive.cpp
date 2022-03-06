@@ -1,16 +1,20 @@
 //In main, use Car car;
-//Then to call functions, use car.XX(); or int integer car->get.XX;
+//Then to call functions, use car.XX; or int integer car->get.XX;
 #include "mbed.h"
-#define FREQUENCY 18000.0f//Above audible range
-#define STATIONARY_DUTY_CYCLE 0.5f
-#define STARDARD_MOVEMENT_SPEED 0.5f
+#define FREQUENCY 10000.0f//Above reasonable audible range
+#define STATIONARY_DUTY_CYCLE 1.0
+#define STARDARD_MOVEMENT_SPEED 0.6
 //Pins
 #define ENABLE_PIN PA_13
 #define BIPOLAR1_PIN PH_1
 #define BIPOLAR2_PIN PH_0
-#define PWM_PIN1 PB_7
-#define PWM_PIN2 PA_15
+#define DIR_PIN1 PB_15
+#define DIR_PIN2 PB_14
+#define PWM_PIN1 PB_1
+#define PWM_PIN2 PC_8
 #define PERIOD 1.0f/FREQUENCY//Period for PWM signal
+#define FORWARD 0
+#define BACKWARD 1
 
 enum Turn
 {
@@ -26,65 +30,68 @@ private:
         DigitalOut Enable_Driveboard;
         DigitalOut Bipolar_1;
         DigitalOut Bipolar_2;
+        DigitalOut Direction_1;
+        DigitalOut Direction_2;
         PwmOut Motor_1;
         PwmOut Motor_2;
 public:
-    Car(PinName enable = ENABLE_PIN, PinName bipolar1 = BIPOLAR1_PIN, PinName bipolar2 = BIPOLAR2_PIN, PinName pwm1 = PWM_PIN1, PinName pwm2 = PWM_PIN2) :
-     Enable_Driveboard(enable), Bipolar_1(bipolar1), Bipolar_2(bipolar2), Motor_1(pwm1), Motor_2(pwm2)
+    Car(PinName enable = ENABLE_PIN, PinName bipolar1 = BIPOLAR1_PIN, PinName bipolar2 = BIPOLAR2_PIN, PinName pwm1 = PWM_PIN1, PinName pwm2 = PWM_PIN2, PinName dir1 = DIR_PIN1, PinName dir2 = DIR_PIN2) :
+     Enable_Driveboard(enable), Bipolar_1(bipolar1), Bipolar_2(bipolar2), Motor_1(pwm1), Motor_2(pwm2), Direction_1(dir1), Direction_2(dir2)
     {   
         //Enable the motor driveboard
         Enable_Driveboard = 1;
         //Use Bipolar mode
-        Bipolar_1 = 1;
-        Bipolar_2 = 1;
-        //For A stationary motor requires exactly 50% duty cycle.
+        Bipolar_1 = 0;
+        Bipolar_2 = 0;
         Motor_1.period(PERIOD);
         Motor_2.period(PERIOD);
-        setMotorSpeeds(0.0, 0.0);
+        stop();//Init at stall
     }
-
-    // -1 goes backwards as fast as possible  == 0.0 duty cycle
-    // 1 goes forwards as fast as possible    == 1.0 duty cycle
-    // 0 stalls                               == 0.5 duty cycle  
-    void setMotorSpeeds(float new_motor1_speed, float new_motor2_speed)
+    void setMotorSpeeds(float duty_cycle_1, float duty_cycle_2)
     {
-        duty_cycle_1 = this->convertSpeedToDutyCycle(new_motor1_speed);
         Motor_1.write(duty_cycle_1);
-        duty_cycle_2 = this->convertSpeedToDutyCycle(new_motor2_speed);
         Motor_2.write(duty_cycle_2);
-    }
-
-    float convertSpeedToDutyCycle(float speed)
-    {
-        return speed * STATIONARY_DUTY_CYCLE + STATIONARY_DUTY_CYCLE;
     }
     
     void startMovingForward()
     {
-        this->setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        Direction_1 = FORWARD;
+        Direction_2 = FORWARD;
+    }
+    void startMovingBackward()
+    {
+        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        Direction_1 = BACKWARD;
+        Direction_2 = BACKWARD;
     }
 
     void stop()
     {
-        this->setMotorSpeeds(0.0f, 0.0f);
+        setMotorSpeeds(STATIONARY_DUTY_CYCLE, STATIONARY_DUTY_CYCLE);
+        wait(0.1);
     }
 
     void turn90Degrees(Turn t)
     {
         switch(t){
         case LEFT:
-            this->setMotorSpeeds(0.0f, STARDARD_MOVEMENT_SPEED);
+            setMotorSpeeds(STATIONARY_DUTY_CYCLE, STARDARD_MOVEMENT_SPEED);
+            Direction_1 = FORWARD;
             wait(0.1);
             break;
         case RIGHT:
-            this->setMotorSpeeds(STARDARD_MOVEMENT_SPEED, 0.0f);
+            setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STATIONARY_DUTY_CYCLE);
+            Direction_2 = FORWARD;
             wait(0.1);
             break;
         }
     }
     void turn180Degrees()
     {
-       setMotorSpeeds(1.0f, 0.0f);
+       setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+            Direction_1 = FORWARD;
+            Direction_2 = BACKWARD;
             wait(0.1); 
     }
 };
