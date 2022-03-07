@@ -1,15 +1,17 @@
 //In main, use Car car;
-//Then to call functions, use car.XX; or int integer car->get.XX;
+//Then to call functions, use car.XX(); or int integer car->get.XX;
 #include "mbed.h"
-#define FREQUENCY 10000.0f//Above reasonable audible range
+#define FREQUENCY 10000.0f//Above audible range
 #define STATIONARY_DUTY_CYCLE 1.0
 #define STARDARD_MOVEMENT_SPEED 0.6
+#define STARDARD_MOVEMENT_SPEED_RIGHT 0.65
+#define STARDARD_TURNING_SPEED 0.65
 //Pins
 #define ENABLE_PIN PA_13
 #define BIPOLAR1_PIN PH_1
 #define BIPOLAR2_PIN PH_0
-#define DIR_PIN1 PB_15
-#define DIR_PIN2 PB_14
+#define DIR_PIN1 PC_14
+#define DIR_PIN2 PA_14
 #define PWM_PIN1 PB_1
 #define PWM_PIN2 PC_8
 #define PERIOD 1.0f/FREQUENCY//Period for PWM signal
