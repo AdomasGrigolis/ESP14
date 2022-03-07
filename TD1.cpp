@@ -1,8 +1,11 @@
 #include "mbed.h"
-#include <encoders.cpp>
+#include <encoder.cpp>
 #include <PWMdrive.cpp>
-#define BUGGY_WIDTH 190//distance between two wheels of buggy is 190 mm
-#define Pi 3.1415
+#define BUGGY_WIDTH 195//distance between two wheels of buggy is 190 mm
+#define Pi 3.1415f
+#define OVERSHOOT_DIST 75.0f//In mm
+#define OVERSHOOT_DIST_TURN 60.0f//In mm
+#define OVERSHOOT_DIST_TURNAROUND 80.0f//In mm
 //turning_circule perimeter for 360 degrees
 const float TURNING_CIRCLE = Pi*BUGGY_WIDTH*2.0f;
 //arc length for 90 degrees
@@ -16,7 +19,7 @@ float volatile curr_pos;
 int main(void){
     TickingEncoder* wheel_left = new TickingEncoder(ENC_2_A_PIN, ENC_2_B_PIN);
     TickingEncoder* wheel_right = new TickingEncoder(ENC_1_A_PIN, ENC_1_B_PIN);
-    volatile int counter = 0;
+    int counter = 0;
     typedef enum {driving_initialisation, driving, stop, turning_initialisation, turning_right, turning_left, turning180, finish} BuggyState;
     BuggyState state = driving_initialisation;
     while (1)
@@ -34,7 +37,7 @@ int main(void){
             {   
                 car.startMovingForward();
                 curr_pos=(wheel_left->get_dx()+wheel_right->get_dx())/2;
-                if(curr_pos> 500)
+                if(curr_pos >= (500-OVERSHOOT_DIST))
                     state = stop;
                 break;    
             }
@@ -53,7 +56,7 @@ int main(void){
                     state = turning_left;
                 else if(counter==4)
                     state = turning180;
-                else if(counter > 4)
+                else if((counter > 4) && (counter < 8))
                     state = turning_right;
                 else if(counter == 8)
                     state = finish;
@@ -62,21 +65,21 @@ int main(void){
             case turning_right:
             {   
                 car.turn90Degrees(RIGHT);
-                if(wheel_left->get_dx() > quarter_circle)
+                if(wheel_right->get_dx() > (quarter_circle - OVERSHOOT_DIST_TURN))
                     state = driving_initialisation;
                 break; 
             }
             case turning_left:
             {
                 car.turn90Degrees(LEFT);
-                if(wheel_right->get_dx() > quarter_circle)
+                if(wheel_left->get_dx() > (quarter_circle - OVERSHOOT_DIST_TURN))
                     state = driving_initialisation;
                 break; 
             }
             case turning180:
             {
-                car.turn180Degrees();
-                if(wheel_left->get_dx() > half_circle)
+                car.turn90Degrees(LEFT);
+                if(wheel_left->get_dx() > (half_circle - OVERSHOOT_DIST_TURNAROUND))
                     state = driving_initialisation; 
                 break;    
             }
