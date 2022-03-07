@@ -21,8 +21,8 @@ class TickingEncoder : public QEI {
     public:
             void enc_isr(){//Called to fetch encoder data by tick_enc
                 pulses = getPulses();//Stores number of pulses
-                dx = pulses/(44.0*NO_PULS_PER_REV)*(NO_PULS_PER_REV/WHEEL_CIRCUMFERENCE);//Old distance + new_speed*time=new_distance
-//                reset();//Resets the count
+                dx += pulses/(44.0*NO_PULS_PER_REV)*(NO_PULS_PER_REV/WHEEL_CIRCUMFERENCE);//Old distance + new_speed*time=new_distance
+                reset();//Resets the count
         }
         TickingEncoder(PinName channelA, PinName channelB):QEI(channelA, channelB, NC, NO_PULS_PER_REV)
         {
