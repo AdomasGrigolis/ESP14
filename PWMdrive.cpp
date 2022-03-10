@@ -22,9 +22,6 @@
 class Car
 {
 private: 
-        //PWM Out for motors
-        float duty_cycle_1;//0.5 is stall
-        float duty_cycle_2;
         DigitalOut Enable_Driveboard;
         DigitalOut Bipolar_1;
         DigitalOut Bipolar_2;
@@ -73,41 +70,56 @@ public:
     Car(PinName enable = ENABLE_PIN, PinName bipolar1 = BIPOLAR1_PIN, PinName bipolar2 = BIPOLAR2_PIN, PinName pwm1 = PWM_PIN1, PinName pwm2 = PWM_PIN2, PinName dir1 = DIR_PIN1, PinName dir2 = DIR_PIN2) :
      Enable_Driveboard(enable), Bipolar_1(bipolar1), Bipolar_2(bipolar2), Motor_1(pwm1), Motor_2(pwm2), Direction_1(dir1), Direction_2(dir2)
     {   
-        //Enable the motor driveboard
         Enable_Driveboard = 1;
-        //Use Bipolar mode
-        Bipolar_1 = 0;
-        Bipolar_2 = 0;
         Motor_1.period(PERIOD);
         Motor_2.period(PERIOD);
+        //Use Unipolar mode
+        Bipolar_1 = 0;
+        Bipolar_2 = 0;
+        //Default direction is forward
+        Direction_1 = FORWARD;
+        Direction_2 = FORWARD;
         stop();//Init at stall
     }
     void setMotorSpeeds(float duty_cycle_1, float duty_cycle_2)
-    {
+    {//Main function that writes DC directly to output
         curr_dc_1 = duty_cycle_1;
         curr_dc_2 = duty_cycle_2;
         Motor_1.write(duty_cycle_1);
         Motor_2.write(duty_cycle_2);
     }
-    
+//Moving linearly    
     void startMovingForward()
     {
+        setDirectionForward();
         setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
-        Direction_1 = FORWARD;
-        Direction_2 = FORWARD;
     }
     void startMovingBackward()
     {
+        setDirectionBackward();
         setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+    }
+    void startMoving()//Direction should be set beforehand or will be forward by default
+    {
+        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+    }
+//Setting direction
+    void setDirectionForward()
+    {
+        Direction_1 = FORWARD;
+        Direction_2 = FORWARD;
+    }
+    void setDirectionBackward()
+    {
         Direction_1 = BACKWARD;
         Direction_2 = BACKWARD;
     }
-
+//Stopping capabilities
     void stop()
     {
         setMotorSpeeds(STATIONARY_DUTY_CYCLE, STATIONARY_DUTY_CYCLE);
     }
-    
+//Acceleration    
     void accelerate()
     {
         decc_tick.detach();
@@ -118,7 +130,7 @@ public:
         acc_tick.detach();
         decc_tick.attach(callback(this, &Car::deceleration), 0.1);
     }
-
+//Turns
     void turnOneWheel(Turn t)//Turns with one wheel stationary
     {
         switch(t){
@@ -135,7 +147,6 @@ public:
     }
     void turnaround(Turn t = LEFT)//Turns with both wheels in opposite directions
     {
-        setMotorSpeeds(STARDARD_TURNING_SPEED, STARDARD_TURNING_SPEED);
         switch(t){
         case LEFT:
             Direction_1 = BACKWARD;
@@ -146,6 +157,7 @@ public:
             Direction_2 = BACKWARD;
             break;
         }
+        setMotorSpeeds(STARDARD_TURNING_SPEED, STARDARD_TURNING_SPEED);
         wait(0.1);
     }
 };//End of class definition
