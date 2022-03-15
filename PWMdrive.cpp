@@ -5,8 +5,9 @@
 #define PERIOD 1.0f/FREQUENCY//Period for PWM signal
 //Increments less than 0.01 should not be used under any circumstance
 #define STATIONARY_DUTY_CYCLE 1.0f
-#define STARDARD_MOVEMENT_SPEED 0.7f//0.7 is found to be suitable for slow cruizing
-#define STARDARD_TURNING_SPEED 0.75f
+#define STANDARD_MOVEMENT_SPEED 0.7f//0.7 is found to be suitable for slow cruizing
+#define RIGHT_OFFSET 0.01f//This offset allows to balance out left and right 
+#define STANDARD_TURNING_SPEED 0.75f
 #define ACC_STIFFNESS 0.01f//Acceleration increments, higher the number, faster the change
 //Pins
 #define ENABLE_PIN PA_13
@@ -40,17 +41,17 @@ private:
         float curr_dc_2;
         void acceleration()//Isr called to cause acceleration
         {
-            if (curr_dc_1 > STARDARD_MOVEMENT_SPEED)
+            if (curr_dc_1 > STANDARD_MOVEMENT_SPEED)
             {
                 curr_dc_1 -= ACC_STIFFNESS;
                 setMotorSpeeds(curr_dc_1, curr_dc_2);
             }
-            if (curr_dc_2 > STARDARD_MOVEMENT_SPEED)
+            if (curr_dc_2 > STANDARD_MOVEMENT_SPEED)
             {
                 curr_dc_2 -= ACC_STIFFNESS;
                 setMotorSpeeds(curr_dc_1, curr_dc_2);
             }
-            if (curr_dc_1 <= STARDARD_MOVEMENT_SPEED && curr_dc_2 <= STARDARD_MOVEMENT_SPEED)acc_tick.detach();
+            if (curr_dc_1 <= STANDARD_MOVEMENT_SPEED && curr_dc_2 <= STANDARD_MOVEMENT_SPEED)acc_tick.detach();
         }
         void deceleration()//Isr called to cause acceleration
         {
@@ -85,6 +86,7 @@ public:
     {//Main function that writes DC directly to output
         curr_dc_1 = duty_cycle_1;
         curr_dc_2 = duty_cycle_2;
+        if (!(duty_cycle_1 >= 1.0f))duty_cycle_1 -= RIGHT_OFFSET;
         Motor_1.write(duty_cycle_1);
         Motor_2.write(duty_cycle_2);
     }
@@ -92,16 +94,16 @@ public:
     void startMovingForward()
     {
         setDirectionForward();
-        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STANDARD_MOVEMENT_SPEED);
     }
     void startMovingBackward()
     {
         setDirectionBackward();
-        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STANDARD_MOVEMENT_SPEED);
     }
     void startMoving()//Direction should be set beforehand or will be forward by default
     {
-        setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STARDARD_MOVEMENT_SPEED);
+        setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STANDARD_MOVEMENT_SPEED);
     }
 //Setting direction
     void setDirectionForward()
@@ -135,11 +137,11 @@ public:
     {
         switch(t){
         case LEFT:
-            setMotorSpeeds(STATIONARY_DUTY_CYCLE, STARDARD_MOVEMENT_SPEED);
+            setMotorSpeeds(STATIONARY_DUTY_CYCLE, STANDARD_MOVEMENT_SPEED);
             Direction_1 = FORWARD;
             break;
         case RIGHT:
-            setMotorSpeeds(STARDARD_MOVEMENT_SPEED, STATIONARY_DUTY_CYCLE);
+            setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STATIONARY_DUTY_CYCLE);
             Direction_2 = FORWARD;
             break;
         }
@@ -157,7 +159,7 @@ public:
             Direction_2 = BACKWARD;
             break;
         }
-        setMotorSpeeds(STARDARD_TURNING_SPEED, STARDARD_TURNING_SPEED);
+        setMotorSpeeds(STANDARD_TURNING_SPEED, STANDARD_TURNING_SPEED);
         wait(0.1);
     }
 };//End of class definition
