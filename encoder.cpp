@@ -6,7 +6,7 @@
 #include <QEI.h>
 
 #define WHEEL_CIRCUMFERENCE 251.33f//In mm
-#define ENCODER_MEASURE_PERIOD 0.001f//Encoder pulses are checked every 1 second
+#define ENCODER_MEASURE_PERIOD 0.1f//Encoder pulses are checked every 1 second
 #define NO_PULS_PER_REV 1024//Pulses per revolution (256*4)
 //Pins
 #define ENC_1_A_PIN PB_2
