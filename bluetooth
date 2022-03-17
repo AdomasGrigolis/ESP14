@@ -1,0 +1,25 @@
+#include <mbed.h>
+#define SERIAL_PIN_1 PA_11
+#define SERIAL_PIN_2 PA_12
+#define DIGITAL_OUT_1 D5
+Serial hm10(SERIAL_PIN_1, SERIAL_PIN_2); //UART6 TX,RX
+DigitalOut redled(DIGITAL_OUT_1);
+
+char c; //the character we want to receive
+
+int main()
+{
+    hm10.baud(9600);
+
+    while(1) {
+        if(hm10.readable()) {
+            c = hm10.getc(); //read a single character
+            if(c == 'A') {
+                redled = 0;
+            } else if(c == 'B') {
+                redled = 1;
+            }
+
+        }
+    }
+}
