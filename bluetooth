@@ -1,25 +1,33 @@
-#include <mbed.h>
+//Simply create object Bluetooth bt; and that's it!
+//UART6 TX,RX
+#include "mbed.h"
 #define SERIAL_PIN_1 PA_11
 #define SERIAL_PIN_2 PA_12
-#define DIGITAL_OUT_1 D5
-Serial hm10(SERIAL_PIN_1, SERIAL_PIN_2); //UART6 TX,RX
-DigitalOut redled(DIGITAL_OUT_1);
+#define LED_PIN D5
+#define BT_CHECK_PERIOD 0.1
+#define BAUD_RATE 9600
+#define ON 0//Led is negative logic
+#define OFF 1
 
-char c; //the character we want to receive
-
-int main()
+class Bluetooth
 {
-    hm10.baud(9600);
-
-    while(1) {
+private:
+    char c;//the character we want to receive
+    Serial hm10;
+    DigitalOut redled;
+    void bt_isr(){
         if(hm10.readable()) {
-            c = hm10.getc(); //read a single character
-            if(c == 'A') {
-                redled = 0;
-            } else if(c == 'B') {
-                redled = 1;
-            }
-
+            c = hm10.getc();//read a single character from module
+            if(c == 'A') redled = ON;
+            else if(c == 'B') redled = OFF;
         }
     }
-}
+public:
+    Bluetooth(PinName serial_1 = SERIAL_PIN_1, PinName serial_2 = SERIAL_PIN_2, PinName led = LED_PIN):hm10(serial_1, serial_2), redled(led)
+    {
+        redled = OFF;
+        Ticker bt_tick;
+        hm10.baud(BAUD_RATE);
+        bt_tick.attach(callback(this, &bluetooth::bt_isr), BT_CHECK_PERIOD);
+    }
+};
