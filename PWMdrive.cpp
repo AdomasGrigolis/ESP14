@@ -6,7 +6,7 @@
 //Increments less than 0.01 should not be used under any circumstance
 #define STATIONARY_DUTY_CYCLE 1.0f
 #define STANDARD_MOVEMENT_SPEED 0.7f//0.7 is found to be suitable for slow cruizing
-#define RIGHT_OFFSET 0.01f//This offset allows to balance out left and right 
+#define RIGHT_OFFSET 0.03f//This offset allows to balance out left and right 
 #define STANDARD_TURNING_SPEED 0.75f
 #define ACC_STIFFNESS 0.01f//Acceleration increments, higher the number, faster the change
 //Pins
@@ -20,6 +20,11 @@
 #define FORWARD 0
 #define BACKWARD 1
 
+enum Turn
+{
+    LEFT, RIGHT
+};
+
 class Car
 {
 private: 
@@ -30,10 +35,6 @@ private:
         DigitalOut Direction_2;
         PwmOut Motor_1;
         PwmOut Motor_2;
-        enum Turn
-        {
-            LEFT, RIGHT
-        };
         //Wheel independent acceleration isrs and related variables
         Ticker acc_tick;
         Ticker decc_tick;
@@ -145,7 +146,6 @@ public:
             Direction_2 = FORWARD;
             break;
         }
-        wait(0.1);
     }
     void turnaround(Turn t = LEFT)//Turns with both wheels in opposite directions
     {
@@ -160,6 +160,13 @@ public:
             break;
         }
         setMotorSpeeds(STANDARD_TURNING_SPEED, STANDARD_TURNING_SPEED);
-        wait(0.1);
+    }
+    float get_curr_dc(Turn t){
+        switch(t){
+        case LEFT:
+            return curr_dc_2;
+        case RIGHT:
+            return curr_dc_1-RIGHT_OFFSET;
+        }
     }
 };//End of class definition
