@@ -28,6 +28,6 @@ public:
         redled = OFF;
         Ticker bt_tick;
         hm10.baud(BAUD_RATE);
-        bt_tick.attach(callback(this, &bluetooth::bt_isr), BT_CHECK_PERIOD);
+        bt_tick.attach(callback(this, &Bluetooth::bt_isr), BT_CHECK_PERIOD);
     }
 };
