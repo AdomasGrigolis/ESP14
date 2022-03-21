@@ -1,3 +1,4 @@
+#pragma once
 //In main, use Car car; to create an obj
 //Then to call functions, use car.XX(); or int integer car->get.XX;
 #include "mbed.h"
