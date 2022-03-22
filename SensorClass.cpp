@@ -1,11 +1,14 @@
 #include "mbed.h" //includes mbed library
 #include "C12832.h" //includes LCD screen lib
+#include <encoders.cpp>
+#include <PWMdrive.cpp>
 
 // Max X value of LCD screen
 
 // Max Y value of LCD screen
 
-
+TickingEncoder* wheel_left = new TickingEncoder(ENC_2_A_PIN, ENC_2_B_PIN);
+Car car;
 C12832 lcd(D11, D13, D12, D7, D10);     //Creates an LCD Object from the LCD library
 DigitalOut led(PB_2);//yellow
 float threshold = 0.5;
@@ -29,7 +32,7 @@ class SENSOR{
       
 };
 SENSOR sen1(PC_4); //grey
-SENSOR sen2(PB_1);//blue
+SENSOR sen2(PC_0);//blue
 SENSOR sen3(PC_5);//green
 SENSOR sen4(PC_2);//red
 SENSOR sen5(PC_3);//purple
@@ -41,6 +44,7 @@ int main()
 {
     int sensorsOn;
     float distance;
+    car.startMovingForward();
     while(1) {
         led = 1;
         distance = 0.0;
@@ -107,9 +111,21 @@ int main()
             lcd.printf("6: off");
             
         }
-        distance = distance / sensorsOn;
-        lcd.locate(60,0);
-        lcd.printf("%.0f",distance);
+        if (sensorsOn > 0){
+            distance = distance / sensorsOn;
+            lcd.locate(50,0);
+            lcd.printf("%.0f",distance);
+            wheel_left->line();
+        }
+        else{
+            lcd.locate(50,0);
+            lcd.printf("No");
+            lcd.locate(50,10);
+            lcd.printf("line");
+            wheel_left->no_line();
+                
+                
+        }
 
         
 
