@@ -11,7 +11,7 @@
 #define ENCODER_MEASURE_PERIOD 0.1//Encoder pulses are checked at this periodicity
 #define NO_PULS_PER_REV 1024//Pulses per revolution of enc disk (256*4)
 #define GAP_LENGTH 10.0f//In mm
-#define STOPPED_SPEED 20.0//In mm/s
+#define STOPPED_SPEED 0.0//In mm/s
 #define PI 3.1415926f
 //Pins
 #define ENC_1_A_PIN PB_2
@@ -43,7 +43,7 @@ private:
             dx += ((double)pulses/NO_PULS_PER_REV)*(WHEEL_CIRCUMFERENCE);//In mm
             if (dx >= GAP_LENGTH) {
                 car.stop();
-                dx = 0;
+                dx = 0.0;
             }
         }
         reset();//Resets the count
@@ -51,10 +51,8 @@ private:
 public:
     TickingEncoder(PinName channelA, PinName channelB):QEI(channelA, channelB, NC, NO_PULS_PER_REV)
     {
-//        this.car = car;
         dx = 0.0;
         no_line_var = false;
-        stopped = false;
         reset();
         tick_enc.attach(callback(this, &TickingEncoder::enc_isr), ENCODER_MEASURE_PERIOD);
     }
