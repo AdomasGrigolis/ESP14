@@ -1,8 +1,8 @@
+//Potentiometer* leftPot = new SamplingPotentiometer(A0, 3.3, 100.0); 
+//Potentiometer* rightPot = new SamplingPotentiometer(A1, 3.3, 100.0);
+//leftHand->getCurrentSampleNorm(); will return 0-1 normalised value from pot
 #include "mbed.h"
-#include "C12832.h"
 #include <math.h> 
-
-C12832 lcd(D11, D13, D12, D7, D10);
 
 class Potentiometer                                 //Begin Potentiometer class definition
 {
