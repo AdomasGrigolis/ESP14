@@ -30,48 +30,19 @@ class Car
 {
 private: 
         DigitalOut Enable_Driveboard;
+        PwmOut Motor_1;
+        PwmOut Motor_2;
         DigitalOut Bipolar_1;
         DigitalOut Bipolar_2;
         DigitalOut Direction_1;
         DigitalOut Direction_2;
-        PwmOut Motor_1;
-        PwmOut Motor_2;
-        //Wheel independent acceleration isrs and related variables
-        Ticker acc_tick;
-        Ticker decc_tick;
         float curr_dc_1;
         float curr_dc_2;
-        void acceleration()//Isr called to cause acceleration
-        {
-            if (curr_dc_1 > STANDARD_MOVEMENT_SPEED)
-            {
-                curr_dc_1 -= ACC_STIFFNESS;
-                setMotorSpeeds(curr_dc_1, curr_dc_2);
-            }
-            if (curr_dc_2 > STANDARD_MOVEMENT_SPEED)
-            {
-                curr_dc_2 -= ACC_STIFFNESS;
-                setMotorSpeeds(curr_dc_1, curr_dc_2);
-            }
-            if (curr_dc_1 <= STANDARD_MOVEMENT_SPEED && curr_dc_2 <= STANDARD_MOVEMENT_SPEED)acc_tick.detach();
-        }
-        void deceleration()//Isr called to cause acceleration
-        {
-            if (curr_dc_1 < STATIONARY_DUTY_CYCLE)
-            {
-                curr_dc_1 += ACC_STIFFNESS;
-                setMotorSpeeds(curr_dc_1, curr_dc_2);
-            }
-            if (curr_dc_2 < STATIONARY_DUTY_CYCLE)
-            {
-                curr_dc_2 += ACC_STIFFNESS;
-                setMotorSpeeds(curr_dc_1, curr_dc_2);
-            }
-            if (curr_dc_1 >= STATIONARY_DUTY_CYCLE && curr_dc_2 >= STATIONARY_DUTY_CYCLE)decc_tick.detach();
-        }
 public:
-    Car(PinName enable = ENABLE_PIN, PinName bipolar1 = BIPOLAR1_PIN, PinName bipolar2 = BIPOLAR2_PIN, PinName pwm1 = PWM_PIN1, PinName pwm2 = PWM_PIN2, PinName dir1 = DIR_PIN1, PinName dir2 = DIR_PIN2) :
-     Enable_Driveboard(enable), Bipolar_1(bipolar1), Bipolar_2(bipolar2), Motor_1(pwm1), Motor_2(pwm2), Direction_1(dir1), Direction_2(dir2)
+    Car(PinName enable = ENABLE_PIN, PinName pwm1 = PWM_PIN1, PinName pwm2 = PWM_PIN2, 
+     PinName bipolar1 = BIPOLAR1_PIN, PinName bipolar2 = BIPOLAR2_PIN, PinName dir1 = DIR_PIN1, PinName dir2 = DIR_PIN2) :
+     Enable_Driveboard(enable), Motor_1(pwm1), Motor_2(pwm2),
+     Bipolar_1(bipolar1), Bipolar_2(bipolar2), Direction_1(dir1), Direction_2(dir2)
     {   
         Enable_Driveboard = 1;
         Motor_1.period(PERIOD);
@@ -123,17 +94,6 @@ public:
     {
         setMotorSpeeds(STATIONARY_DUTY_CYCLE, STATIONARY_DUTY_CYCLE);
     }
-//Acceleration    
-    void accelerate()
-    {
-        decc_tick.detach();
-        acc_tick.attach(callback(this, &Car::acceleration), 0.1);
-    }
-    void decelerate()
-    {
-        acc_tick.detach();
-        decc_tick.attach(callback(this, &Car::deceleration), 0.1);
-    }
 //Turns
     void turnOneWheel(Turn t)//Turns with one wheel stationary
     {
@@ -167,7 +127,8 @@ public:
         case LEFT:
             return curr_dc_2;
         case RIGHT:
-            return curr_dc_1-RIGHT_OFFSET;
+            return curr_dc_1;
         }
+        return -1.0f;
     }
 };//End of class definition
