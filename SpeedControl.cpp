@@ -37,10 +37,10 @@ SENSOR sen2(PC_0);//blue
 SENSOR sen3(PC_5);//green
 SENSOR sen4(PC_2);//red
 SENSOR sen5(PC_3);//purple
-SENSOR sen6(PC_1);//orange Power drop on this pin because it is shared with the joystick.
+SENSOR sen6(PB_0);//orange Power drop on this pin because it is shared with the joystick.
 
 
-float calculate_PID(float error_left, float error_right, float kp){
+float calculate_PID_speed(float error_left, float error_right, float kp){
     float P_left = error_left *kp; //creates the p value by a given error(distance) and the controlling variable kp
     float P_right = error_right *kp;
     float maximum_ang_speed = 100;
@@ -68,7 +68,25 @@ float calculate_PID(float error_left, float error_right, float kp){
     return output; //returns the output for trouble shooting
 }
 
-
+float calculate_PID(float error_in, float kp){
+    float P_ = error_in *kp; //creates the p value by a given error(distance) and the controlling variable kp
+    float duty = 0.8; //default crusing speed
+    float output = P_; //for future if I_ and D_ are implemented 
+    
+    if (output < 0){ //line is on the left hand side
+        car.setMotorSpeeds(duty - P_, duty + P_); //decreases duty cycle 1(right) and increases duty 2 (left)
+                                                  //this speeds up the right wheel and slows the left
+    }
+    else if (output > 0){
+        car.setMotorSpeeds(duty - P_, duty + P_); //increases duty1 (right) decreases duty2(left)
+                                                  //slows right wheel and speeds up the left
+    }
+    else{
+        car.setMotorSpeeds(duty, duty);//remains constant forward
+        
+    }
+    return output; //returns the output for trouble shooting
+}
 
 
 
@@ -86,9 +104,9 @@ int main()
         sensorsOn = 0;
         
         // speed control
-        angular_speed_left = wheel_left->get_ang_speed();
-        angular_speed_right = wheel_right->get_ang_speed();
-        calculate_PID(angular_speed_left,angular_speed_right,0.6);
+       // angular_speed_left = wheel_left->get_ang_speed();
+       // angular_speed_right = wheel_right->get_ang_speed();
+       // calculate_PID_speed(angular_speed_left,angular_speed_right,0.6);
         
         if (sen1.sensorState() == true){
             lcd.locate(20,0);
@@ -156,7 +174,7 @@ int main()
             distance = distance / sensorsOn;
             lcd.locate(50,0);
             lcd.printf("%.0f",distance);
-            
+            duty_delta = calculate_PID(distance, 0.001);
             wheel_left->line();
         }
         else{
