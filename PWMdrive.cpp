@@ -88,7 +88,7 @@ public:
     {//Main function that writes DC directly to output
         curr_dc_1 = duty_cycle_1;
         curr_dc_2 = duty_cycle_2;
-        if (!(duty_cycle_1 >= 1.0f))duty_cycle_1 -= RIGHT_OFFSET;
+        //if (!(duty_cycle_1 >= 1.0f))duty_cycle_1 -= RIGHT_OFFSET;
         Motor_1.write(duty_cycle_1);
         Motor_2.write(duty_cycle_2);
     }
