@@ -43,7 +43,6 @@ private:
             dx += ((double)pulses/NO_PULS_PER_REV)*(WHEEL_CIRCUMFERENCE);//In mm
             if (dx >= GAP_LENGTH) {
                 car.stop();
-                tick_enc.detach(); //Controlled Stop
                 dx = 0;
             }
         }
