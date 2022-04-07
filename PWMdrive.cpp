@@ -59,9 +59,14 @@ public:
     {//Main function that writes DC directly to output
         curr_dc_1 = duty_cycle_1;
         curr_dc_2 = duty_cycle_2;
-        //if (!(duty_cycle_1 >= 1.0f))duty_cycle_1 -= RIGHT_OFFSET;
         Motor_1.write(duty_cycle_1);
         Motor_2.write(duty_cycle_2);
+    }
+    void changeDutyCycle(float change_left, float change_right)
+    {
+        float changed_dc_1 = curr_dc_1 + change_left;
+        float changed_dc_2 = curr_dc_2 + change_right;
+        setMotorSpeeds(changed_dc_1, changed_dc_2);
     }
 //Moving linearly    
     void startMovingForward()
