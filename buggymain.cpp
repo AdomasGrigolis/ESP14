@@ -1,153 +1,143 @@
-#include "mbed.h" //includes mbed library
-#include "C12832.h" //includes LCD screen lib
-#include <encoder.cpp>
-#include <PWMdrive.cpp>
-#include <pot.cpp>
-#include <sensor.cpp>
+#pragma once
+//In main, use Car car; to create an obj
+//Then to call functions, use car.XX(); or int integer car->get.XX;
+#include "mbed.h"
+#define FREQUENCY 10000.0f//Above audible range
+#define PERIOD 1.0f/FREQUENCY//Period for PWM signal
+//Increments less than 0.01 should not be used under any circumstance
+#define STATIONARY_DUTY_CYCLE 1.0f
+#define STANDARD_MOVEMENT_SPEED 0.7f//0.7 is found to be suitable for slow cruizing
+#define RIGHT_OFFSET 0.03f//This offset allows to balance out left and right 
+#define STANDARD_TURNING_SPEED 0.75f
+#define ACC_STIFFNESS 0.01f//Acceleration increments, higher the number, faster the change
+//Pins
+#define ENABLE_PIN PA_13
+#define BIPOLAR1_PIN PH_1
+#define BIPOLAR2_PIN PH_0
+#define DIR_PIN1 PC_14
+#define DIR_PIN2 PA_14
+#define PWM_PIN1 PB_1
+#define PWM_PIN2 PC_8
+#define FORWARD 0
+#define BACKWARD 1
 
-#define STOPPING_STIFFNESS 0.01f
-#define STOPPING_SPEED 0.1f
-
-//Desired angular speeds
-double global_ang_speed_right = 7.0;
-double global_ang_speed_left = 7.0;
-
-// Max X value of LCD screen
-// Max Y value of LCD screen
-
-TickingEncoder* wheel_left = new TickingEncoder(ENC_2_A_PIN, ENC_2_B_PIN);
-TickingEncoder* wheel_right = new TickingEncoder(ENC_1_A_PIN, ENC_1_B_PIN);
-Potentiometer* leftPot = new SamplingPotentiometer(A0, 3.3, 100.0); 
-Car car;//Motor control
-C12832 lcd(D11, D13, D12, D7, D10);
-//Line sensors
-SENSOR sen1(PC_4); //grey
-SENSOR sen2(PC_0);//blue
-SENSOR sen3(PC_5);//green
-SENSOR sen4(PC_2);//red
-SENSOR sen5(PC_3);//purple
-SENSOR sen6(PB_0);//orange Power drop on this pin because it is shared with the joystick.
-
-//Deceleration
-Ticker decc_tick;
-void deceleration()
+enum Turn
 {
-    //Right
-    if (wheel_right->get_ang_speed() > 0.0)
-    {
-        global_ang_speed_right -= STOPPING_STIFFNESS;
-    }
-    else if (wheel_right->get_ang_speed() < 0.0)
-    {
-        global_ang_speed_right += STOPPING_STIFFNESS;
-    }
-    //Left
-    if (wheel_left->get_ang_speed() > 0.0)
-    {
-        global_ang_speed_left -= STOPPING_STIFFNESS;
-    }
-    else if (wheel_right->get_ang_speed() < 0.0)
-    {
-        global_ang_speed_right += STOPPING_STIFFNESS;
-    }
-    if (wheel_right->get_ang_speed() == 0.0 && wheel_left->get_ang_speed() == 0.0)decc_tick.detach();
-}
+    LEFT, RIGHT
+};
 
-void stopGradual()
+class Car
 {
-    decc_tick.detach();
-    decc_tick.attach(deceleration, STOPPING_SPEED);
-}//Deceleration end
-
-//Controllers
-Ticker sp_tick;
-void speedController(void){//Speed control
-    if(wheel_left->get_ang_speed() > global_ang_speed_left)car.changeDutyCycle(0.05f, 0.0f);
-    else if(wheel_left->get_ang_speed() < global_ang_speed_left)car.changeDutyCycle(-0.05f, 0.0f);
-    if(wheel_right->get_ang_speed() > global_ang_speed_right)car.changeDutyCycle(0.0f, 0.05f);
-    else if(wheel_left->get_ang_speed() < global_ang_speed_right)car.changeDutyCycle(0.0f, -0.05f);
-}
-
-float calculate_PID(float error_in, float kp){
-    float P_ = error_in *kp; //creates the p value by a given error(distance) and the controlling variable kp
-    float duty = 0.7f; //default crusing speed
-    float output = P_; //for future if I_ and D_ are implemented 
-    
-    if (output < 0){ //line is on the left hand side
-        car.setMotorSpeeds(duty + P_, duty - P_); //decreases duty cycle 1(right) and increases duty 2 (left)
-                                                  //this speeds up the right wheel and slows the left
+private: 
+        DigitalOut Enable_Driveboard;
+        PwmOut Motor_1;
+        PwmOut Motor_2;
+        DigitalOut Bipolar_1;
+        DigitalOut Bipolar_2;
+        DigitalOut Direction_1;
+        DigitalOut Direction_2;
+        float curr_dc_1;
+        float curr_dc_2;
+public:
+    Car(PinName enable = ENABLE_PIN, PinName pwm1 = PWM_PIN1, PinName pwm2 = PWM_PIN2, 
+     PinName bipolar1 = BIPOLAR1_PIN, PinName bipolar2 = BIPOLAR2_PIN, PinName dir1 = DIR_PIN1, PinName dir2 = DIR_PIN2) :
+     Enable_Driveboard(enable), Motor_1(pwm1), Motor_2(pwm2),
+     Bipolar_1(bipolar1), Bipolar_2(bipolar2), Direction_1(dir1), Direction_2(dir2)
+    {   
+        Enable_Driveboard = 1;
+        Motor_1.period(PERIOD);
+        Motor_2.period(PERIOD);
+        //Use Unipolar mode
+        Bipolar_1 = 0;
+        Bipolar_2 = 0;
+        //Default direction is forward
+        Direction_1 = FORWARD;
+        Direction_2 = FORWARD;
+        stop();//Init at stall
     }
-    else if (output > 0){
-        car.setMotorSpeeds(duty + P_, duty - P_); //increases duty1 (right) decreases duty2(left)
-                                                  //slows right wheel and speeds up the left
-    }
-    else{
-        car.setMotorSpeeds(duty, duty);//remains constant forward
-        
-    }
-    return output; //returns the output for trouble shooting
-}
-
-int main(void)
-{
-    lcd.set_auto_up(1);//This ensures no flickering on LCD
-    float Kp;
-    int sensorsOn;
-    float distance;
-    float volatile duty_delta;
-    sp_tick.attach(speedController, 0.01);
-    while(1) {
-        Kp = leftPot->getCurrentSampleNorm()/4.0f;//Up to 0.25
-        lcd.locate(0,0);
-        lcd.printf("%.3f",Kp);
-        lcd.locate(0,10);
-        lcd.printf("%.1lf||%.1lf",wheel_left->get_ang_speed(), wheel_right->get_ang_speed());
-//        led = 1;
-        distance = 0.0;
-        sensorsOn = 0;
-        if (sen1.sensorState() == true){
-            distance += 45;
-            sensorsOn += 1;
+    void setMotorSpeeds(float duty_cycle_1, float duty_cycle_2)
+    {//Main function that writes DC directly to output
+        if(duty_cycle_1 >= 0.0f && duty_cycle_1 <= 1.0f){
+            Motor_1.write(duty_cycle_1);
+            curr_dc_1 = duty_cycle_1;
         }
-//        else if (sen1.sensorState() == false){}
-        if (sen2.sensorState() == true){
-            distance += 25;
-            sensorsOn += 1;
-        }
-//        else if (sen2.sensorState() == false){}
-        if (sen3.sensorState() == true){
-            distance += 10;
-            sensorsOn += 1;
-        }
-//        else if (sen3.sensorState() == false){}
-        if (sen4.sensorState() == true){
-            distance -= 10;
-            sensorsOn += 1;
-        }
-//        else if (sen4.sensorState() == false){}
-        if (sen5.sensorState() == true){
-            distance -= 25;
-            sensorsOn += 1;
-        }
-//        else if (sen5.sensorState() == false){}
-        if (sen6.sensorState() == true){
-            distance -= 45;
-            sensorsOn += 1;
-        }
-//        else if (sen6.sensorState() == false){   }
-        if (sensorsOn > 0){
-            distance = distance / sensorsOn;
-            lcd.locate(50,0);
-            lcd.printf("%.0f",distance);
-            duty_delta = calculate_PID(distance, Kp);
-            wheel_right->line();
-        }
-        else{
-            lcd.locate(50,0);
-            lcd.printf("No");
-            lcd.locate(50,10);
-            lcd.printf("line");
-            wheel_right->no_line(); 
+        if(duty_cycle_2 >= 0.0f && duty_cycle_2 <= 1.0f){
+            Motor_2.write(duty_cycle_2);
+            curr_dc_2 = duty_cycle_2;
         }
     }
-}
+    void changeDutyCycle(float change_left, float change_right)
+    {
+        float changed_dc_1 = curr_dc_1 + change_left;
+        float changed_dc_2 = curr_dc_2 + change_right;
+        setMotorSpeeds(changed_dc_1, changed_dc_2);
+    }
+//Moving linearly    
+    void startMovingForward()
+    {
+        setDirectionForward();
+        setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STANDARD_MOVEMENT_SPEED);
+    }
+    void startMovingBackward()
+    {
+        setDirectionBackward();
+        setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STANDARD_MOVEMENT_SPEED);
+    }
+    void startMoving()//Direction should be set beforehand or will be forward by default
+    {
+        setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STANDARD_MOVEMENT_SPEED);
+    }
+//Setting direction
+    void setDirectionForward()
+    {
+        Direction_1 = FORWARD;
+        Direction_2 = FORWARD;
+    }
+    void setDirectionBackward()
+    {
+        Direction_1 = BACKWARD;
+        Direction_2 = BACKWARD;
+    }
+//Stopping capabilities
+    void stop()
+    {
+        setMotorSpeeds(STATIONARY_DUTY_CYCLE, STATIONARY_DUTY_CYCLE);
+    }
+//Turns
+    void turnOneWheel(Turn t)//Turns with one wheel stationary
+    {
+        switch(t){
+        case LEFT:
+            setMotorSpeeds(STATIONARY_DUTY_CYCLE, STANDARD_MOVEMENT_SPEED);
+            Direction_1 = FORWARD;
+            break;
+        case RIGHT:
+            setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STATIONARY_DUTY_CYCLE);
+            Direction_2 = FORWARD;
+            break;
+        }
+    }
+    void turnaround(Turn t = LEFT)//Turns with both wheels in opposite directions
+    {
+        switch(t){
+        case LEFT:
+            Direction_1 = BACKWARD;
+            Direction_2 = FORWARD;
+            break;
+        case RIGHT:
+            Direction_1 = FORWARD;
+            Direction_2 = BACKWARD;
+            break;
+        }
+        setMotorSpeeds(STANDARD_TURNING_SPEED, STANDARD_TURNING_SPEED);
+    }
+    float get_curr_dc(Turn t){
+        switch(t){
+        case LEFT:
+            return curr_dc_2;
+        case RIGHT:
+            return curr_dc_1;
+        }
+        return -1.0f;
+    }
+};//End of class definition
