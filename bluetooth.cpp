@@ -1,16 +1,16 @@
-#include <mbed.h>
-#include <C12832.h>
-
-Serial hm10(PA_11, PA_12); //UART6 TX,RX
+#include "mbed.h"
 //RGB LED
 DigitalOut redLED(D5);
 DigitalOut greenLED(D9);
 DigitalOut blueLED(D8);
 //lcd
-C12832 lcd(D11, D13, D12, D7, D10);
+Ticker T;
+InterruptIn UP (PA_12);
+
 uint8_t my_command_length = 5;
 uint8_t i;
 char hm10_receive_buffer[5];
+
 
 //class of RGB_LED
 class RGB_LED                                           //Begin LED class definition
@@ -40,14 +40,21 @@ public:                                             //Public declarations
         blueLED = 1;
     }
 };
+
 RGB_LED led(D5,D9,D8);
-int main()
+
+class BLUETOOTH
 {
-    hm10.baud(9600);
+private:
+    Serial hm10; //UART6 TX,RX
+public:
+    BLUETOOTH(PinName USBTX, PinName USBRX): hm10(USBTX,USBRX)
+    {
+        hm10.baud(9600);
+    }
 
-    while(1) {
-
-        //Receive command of specific length
+    void color()
+    {
         if(hm10.readable()) {
             while(i < my_command_length) {
                 hm10_receive_buffer[i++] = hm10.getc();
@@ -71,4 +78,6 @@ int main()
             }
         }
     }
-}
+
+};
+BLUETOOTH BT(PA_11,PA_12);
