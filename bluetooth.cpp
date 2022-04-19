@@ -81,3 +81,11 @@ public:
 
 };
 BLUETOOTH BT(PA_11,PA_12);
+
+int main()
+{
+    while(1) {
+
+        UP.rise(&BT, &BLUETOOTH::color);
+    }
+}
