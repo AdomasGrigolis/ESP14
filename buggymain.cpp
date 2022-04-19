@@ -89,13 +89,14 @@ int main(void)
     int sensorsOn;
     float distance;
     float volatile duty_delta;
-//    sp_tick.attach(&speedController, 0.001);
     while(1){
         Kp = leftPot->getCurrentSampleNorm()/4.0f;//Up to 0.25
         lcd.locate(0,0);
-        lcd.printf("%.3f",Kp);
+        lcd.printf("Kp: %.3f",Kp);
         lcd.locate(0,10);
         lcd.printf("%.1lf||%.1lf",wheel_left->get_ang_speed(), wheel_right->get_ang_speed());
+        lcd.locate(0,20);
+        lcd.printf("%.1lf||%.1lf",global_ang_speed_left, global_ang_speed_right);
         distance = 0.0f;
         sensorsOn = 0;
         if (sen1.sensorState() == true){
@@ -132,7 +133,7 @@ int main(void)
             distance = distance/sensorsOn;
             lcd.locate(50,0);
             lcd.printf("%.0f",distance);
-//            duty_delta = calculate_PID(distance, 0.0);
+            duty_delta = calculate_PID(distance, 0.0);
             disable_speed_controls = false;
             wheel_right->line();
         }
@@ -145,10 +146,10 @@ int main(void)
             wheel_right->no_line(); 
         }
         if(disable_speed_controls == false){
-            if(wheel_left->get_ang_speed() > global_ang_speed_left)car.changeDutyCycle(0.0f, 0.005f);
-            else if(wheel_left->get_ang_speed() < global_ang_speed_left)car.changeDutyCycle(0.0f, -0.005f);
-            if(wheel_right->get_ang_speed() > global_ang_speed_right)car.changeDutyCycle(0.005f, 0.0f);
-            else if(wheel_right->get_ang_speed() < global_ang_speed_right)car.changeDutyCycle(-0.005f, 0.0f);
+            if(wheel_left->get_ang_speed() > global_ang_speed_left)car.changeDutyCycle(0.0f, 0.05f);
+            else if(wheel_left->get_ang_speed() < global_ang_speed_left)car.changeDutyCycle(0.0f, -0.05f);
+            if(wheel_right->get_ang_speed() > global_ang_speed_right)car.changeDutyCycle(0.05f, 0.0f);
+            else if(wheel_right->get_ang_speed() < global_ang_speed_right)car.changeDutyCycle(-0.05f, 0.0f);
         }
     }
 }
