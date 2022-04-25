@@ -28,14 +28,17 @@ public:
                 memset(hm10_receive_buffer, 0, 5);
                 // clear the command buffer after we have parsed the command
             } else if(strcmp(hm10_receive_buffer, "SLOPE") == 0) {
+                
                 memset(hm10_receive_buffer, 0, 5);
                 // clear the command buffer after we have parsed the command
             } else if(strcmp(hm10_receive_buffer, "TLEFT") == 0) {
                 car.turnOneWheel(LEFT);
+                wait(0.5);
                 memset(hm10_receive_buffer, 0, 5);
                 // clear the command buffer after we have parsed the command
             } else if(strcmp(hm10_receive_buffer, "RIGHT") == 0) {
                 car.turnOneWheel(RIGHT);
+                wait(0.5);
                 memset(hm10_receive_buffer, 0, 5);
             }
         }
