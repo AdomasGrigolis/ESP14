@@ -8,7 +8,7 @@
 #include <PWMdrive.cpp>
 
 #define WHEEL_CIRCUMFERENCE 251.33f//In mm
-#define ENCODER_MEASURE_PERIOD 0.1//Encoder pulses are checked at this periodicity
+#define ENCODER_MEASURE_PERIOD 0.001//Encoder pulses are checked at this periodicity
 #define NO_PULS_PER_REV 1024//Pulses per revolution of enc disk (256*4)
 #define GAP_LENGTH 10.0f//In mm
 #define STOPPED_SPEED 0.0//In mm/s
