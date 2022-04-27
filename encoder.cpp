@@ -5,7 +5,6 @@
 //TickingEncoder* wheel_right = new TickingEncoder(ENC_1_A_PIN, ENC_1_B_PIN);
 //To get speed for e.g. use wheel_right->get_speed();
 #include <QEI.h>
-#include <PWMdrive.cpp>
 
 #define WHEEL_CIRCUMFERENCE 251.33f//In mm
 #define ENCODER_MEASURE_PERIOD 0.001//Encoder pulses are checked at this periodicity
@@ -23,13 +22,13 @@ class TickingEncoder : public QEI
 {
 private:
     Ticker tick_enc;
-    Car car;
     volatile int pulses;
-    volatile double dx;
+    double dx;
     volatile double speed;//mm/s
     volatile double ang_speed;//rad/s
     volatile bool no_line_var;
     volatile bool stopped;
+    volatile bool flag;//This flag tells main to stop the motors
     void enc_isr()
     {
         //Called to fetch encoder data by tick_enc
@@ -42,7 +41,7 @@ private:
         if (no_line_var == true && stopped == false) {
             dx += ((double)pulses/NO_PULS_PER_REV)*(WHEEL_CIRCUMFERENCE);//In mm
             if (dx >= GAP_LENGTH) {
-                car.stop();
+                flag = true;
                 dx = 0.0;
             }
         }
@@ -53,12 +52,18 @@ public:
     {
         dx = 0.0;
         no_line_var = false;
+        flag = false;
         reset();
         tick_enc.attach(callback(this, &TickingEncoder::enc_isr), ENCODER_MEASURE_PERIOD);
     }
     //Selectors
     double get_speed(){return speed;}
     double get_ang_speed(){return ang_speed;}
+    bool get_flag(){
+        bool flag_old = flag;
+        flag = false;
+        return flag_old;
+        }
     int pos_dirr()//1 for positive dirr, 0 for none, and -1 for negative
     {
         if(speed > 0.0)return 1;
