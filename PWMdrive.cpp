@@ -14,8 +14,8 @@
 #define ENABLE_PIN PA_13
 #define BIPOLAR1_PIN PH_1
 #define BIPOLAR2_PIN PH_0
-#define DIR_PIN1 PC_14
-#define DIR_PIN2 PA_14
+#define DIR_PIN1 PA_14
+#define DIR_PIN2 PC_13
 #define PWM_PIN1 PB_1
 #define PWM_PIN2 PC_8
 #define FORWARD 0
@@ -52,15 +52,19 @@ public:
         Bipolar_2 = 0;
         //Default direction is forward
         Direction_1 = FORWARD;
-        Direction_2 = FORWARD;
+        Direction_2 = BACKWARD;//Direction_2 is inverse
         stop();//Init at stall
     }
     void setMotorSpeeds(float duty_cycle_1, float duty_cycle_2)
     {//Main function that writes DC directly to output
-        curr_dc_1 = duty_cycle_1;
-        curr_dc_2 = duty_cycle_2;
-        Motor_1.write(duty_cycle_1);
-        Motor_2.write(duty_cycle_2);
+        if(duty_cycle_1 >= 0.0f && duty_cycle_1 <= 1.0f){
+            Motor_1.write(duty_cycle_1);
+            curr_dc_1 = duty_cycle_1;
+        }
+        if(duty_cycle_2 >= 0.0f && duty_cycle_2 <= 1.0f){
+            Motor_2.write(duty_cycle_2);
+            curr_dc_2 = duty_cycle_2;
+        }
     }
     void changeDutyCycle(float change_left, float change_right)
     {
@@ -87,12 +91,12 @@ public:
     void setDirectionForward()
     {
         Direction_1 = FORWARD;
-        Direction_2 = FORWARD;
+        Direction_2 = BACKWARD;
     }
     void setDirectionBackward()
     {
         Direction_1 = BACKWARD;
-        Direction_2 = BACKWARD;
+        Direction_2 = FORWARD;
     }
 //Stopping capabilities
     void stop()
@@ -109,7 +113,7 @@ public:
             break;
         case RIGHT:
             setMotorSpeeds(STANDARD_MOVEMENT_SPEED, STATIONARY_DUTY_CYCLE);
-            Direction_2 = FORWARD;
+            Direction_2 = BACKWARD;
             break;
         }
     }
@@ -118,14 +122,14 @@ public:
         switch(t){
         case LEFT:
             Direction_1 = BACKWARD;
-            Direction_2 = FORWARD;
+            Direction_2 = BACKWARD;
             break;
         case RIGHT:
             Direction_1 = FORWARD;
-            Direction_2 = BACKWARD;
+            Direction_2 = FORWARD;
             break;
         }
-        setMotorSpeeds(STANDARD_TURNING_SPEED, STANDARD_TURNING_SPEED);
+//        setMotorSpeeds(STANDARD_TURNING_SPEED, STANDARD_TURNING_SPEED);
     }
     float get_curr_dc(Turn t){
         switch(t){
