@@ -5,7 +5,7 @@
 #include <pot.cpp>
 #include <sensor.cpp>
 
-#define DEFAULT_SPEED 6.0f//Rad/s
+#define DEFAULT_SPEED 8.0f//Rad/s
 
 //Desired angular speeds rad/s
 double global_ang_speed_right = DEFAULT_SPEED;
@@ -29,7 +29,7 @@ SENSOR sen5(PC_3);//purple
 SENSOR sen6(PB_0);//orange (Power drop)
 
 Ticker Speed_tick;
-float step = 0.01f;
+float step = 0.02f;
 void Speed_control(void){
         if(disable_speed_controls == false) {      
             if(wheel_left->get_ang_speed() > global_ang_speed_left)car.changeDutyCycle(0.0f, step);
@@ -41,12 +41,16 @@ void Speed_control(void){
             if (global_ang_speed_right < 0.0f)global_ang_speed_right = 0.0f;
         }
 }
+float pre_error = 0.0;
 Ticker control_tick;
 void control_PID(void)
 {
         int sensorsOn = 0;
+        
         float distance = 0.0f;
-        Kp = leftPot->getCurrentSampleNorm()/5.0f;//Up to 0.2
+        Kp = leftPot->getCurrentSampleNorm()*2.0f;//Up to 0.5
+        float Kd = 0.0088f;
+        
 //Checking sensor states
         if (sen1.sensorState() == true){
             distance += 3.0f;//37,3
@@ -80,10 +84,13 @@ void control_PID(void)
         
         if (sensorsOn > 0) {
             distance = distance/sensorsOn;
+            float D__ = (distance - pre_error)/0.01f;
+            float D_ = D__ * Kd;
+            pre_error = distance;
             disable_speed_controls = false;
             wheel_right->line();
             float P_ = distance*Kp; //creates the p value by a given error(distance) and the controlling variable kp
-            float output = P_; //for future if I_ and D_ are implemented
+            float output = P_ + D_; //for future if I_ and D_ are implemented
             if (output > 0) { //line is on the left hand side
                 global_ang_speed_left = DEFAULT_SPEED-output;//speeds up right wheel and slows left
                 global_ang_speed_right = DEFAULT_SPEED+output;
@@ -125,18 +132,21 @@ public:
                 global_ang_speed_right = 0.0;
                 global_ang_speed_left = 0.0;
                 car.setMotorSpeeds(0.8f,0.8f);
-                while(sen3.sensorState() == false || sen4.sensorState() == false) {
-                    car.turnaround(LEFT);
-                    memset(hm10_receive_buffer, 0, 5);
-                }
-                car.setMotorSpeeds(1.0f,1.0f);
-                car.setDirectionForward();
-                control_tick.attach(&control_PID, 0.01);
-                disable_speed_controls = false;
-            } else if(strcmp(hm10_receive_buffer, "PAUSE") == 0) {
-                car.stop();
+                car.turnaround(LEFT);
                 memset(hm10_receive_buffer, 0, 5);
             }
+            else if(strcmp(hm10_receive_buffer, "PAUSE") == 0){
+                control_tick.detach();
+                global_ang_speed_right = 0.0;
+                global_ang_speed_left = 0.0;
+                memset(hm10_receive_buffer, 0, 5);
+            }
+            else if(strcmp(hm10_receive_buffer, "RESUM") == 0){
+                car.setDirectionForward();
+                disable_speed_controls = false;
+                control_tick.attach(&control_PID, 0.01);
+                memset(hm10_receive_buffer, 0, 5);
+                }
         }
     }
 };//End of Bluetooth
@@ -146,12 +156,12 @@ BLUETOOTH BT(PA_11,PA_12);
 int main(void)
 {
     lcd.set_auto_up(1);//This ensures no flickering on LCD
-    Speed_tick.attach(&Speed_control, 0.01);
+    Speed_tick.attach(&Speed_control, 0.005);
     control_tick.attach(&control_PID, 0.01);
     bluetooth_receive.rise(&BT, &BLUETOOTH::control);
     while(true){
         lcd.locate(0,0);
-        lcd.printf("%.2f *100",Kp*100);
+        lcd.printf("%.2f /100",Kp*100);
         if(wheel_right->get_flag() == true){//Controlled stop
             global_ang_speed_right = 0.0;
             global_ang_speed_left = 0.0;
