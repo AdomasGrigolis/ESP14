@@ -9,9 +9,10 @@
 #define WHEEL_CIRCUMFERENCE 251.33f//In mm
 #define ENCODER_MEASURE_PERIOD 0.001//Encoder pulses are checked at this periodicity
 #define NO_PULS_PER_REV 1024//Pulses per revolution of enc disk (256*4)
-#define GAP_LENGTH 10.0f//In mm
-#define STOPPED_SPEED 0.0//In mm/s
+#define GAP_LENGTH 10.0f//mm
+#define STOPPED_SPEED 0.0//mm/s
 #define PI 3.1415926f
+#define QUARTER_CIRCLE 270.0f//mm
 //Pins
 #define ENC_1_A_PIN PB_2
 #define ENC_1_B_PIN PB_15
@@ -26,62 +27,69 @@ private:
     double dx;
     volatile double speed;//mm/s
     volatile double ang_speed;//rad/s
-    volatile bool no_line_var;
-    volatile bool stopped;
-    volatile bool flag;//This flag tells main to stop the motors
+    volatile bool no_line_var;//Flag to indicate that there is no line
+    //This flag tells main to stop the motors/that buggy has turned 180 deg
+    volatile bool flag;
+    volatile bool count_q;//Quarter turn flag
     void enc_isr()
     {
         //Called to fetch encoder data by tick_enc
         pulses = getPulses();//Stores number of pulses
         speed = (((double)pulses/NO_PULS_PER_REV)*(WHEEL_CIRCUMFERENCE))/ENCODER_MEASURE_PERIOD;
         ang_speed = (((double)pulses/NO_PULS_PER_REV)*2*PI)/ENCODER_MEASURE_PERIOD;
-        if (pos_dirr()*speed <= STOPPED_SPEED)stopped = true;
-        else stopped = false;
+        
+        //Quarter circle counter
+        if(count_q == true){
+            dx += ((double)pulses/NO_PULS_PER_REV)*(WHEEL_CIRCUMFERENCE);//In mm
+            if(dx >= QUARTER_CIRCLE){
+                flag = true;
+                zero_dx();
+                count_q = false;
+                }
+        }
         //Detection distance in case of line break
-        if (no_line_var == true && stopped == false) {
+        else if (no_line_var == true) {
             dx += ((double)pulses/NO_PULS_PER_REV)*(WHEEL_CIRCUMFERENCE);//In mm
             if (dx >= GAP_LENGTH) {
                 flag = true;
-                dx = 0.0;
+                zero_dx();
             }
         }
+        else zero_dx();//experimental
         reset();//Resets the count
     }
+    void zero_dx(){dx = 0.0;}
 public:
     TickingEncoder(PinName channelA, PinName channelB):QEI(channelA, channelB, NC, NO_PULS_PER_REV)
     {
         dx = 0.0;
+        count_q = false;
         no_line_var = false;
         flag = false;
         reset();
         tick_enc.attach(callback(this, &TickingEncoder::enc_isr), ENCODER_MEASURE_PERIOD);
     }
     //Selectors
-    double get_speed(){return speed;}
+//    double get_speed(){return speed;}
     double get_ang_speed(){return ang_speed;}
     bool get_flag(){
         bool flag_old = flag;
         flag = false;
         return flag_old;
-        }
-    int pos_dirr()//1 for positive dirr, 0 for none, and -1 for negative
+    }
+    int pos_dirr()//1 for positive dirr, 0 for stationary, and -1 for negative
     {
-        if(speed > 0.0)return 1;
-        else if (speed == 0.0) return 0;
+        if(ang_speed > 0.0)return 1;
+        else if (ang_speed == 0.0) return 0;
         else return -1;
     }
-/* Distance not used anymore as it's redundant with feedback controls
-    double get_dx()
-    {
-        return dx;
-    }
-*/
+//    double get_dx(){return dx;}
     //Modifiers
-    void zero_dx(){dx = 0.0;}
     void no_line(){no_line_var = true;}
     void line()
     {
         no_line_var = false;
-        dx = 0.0;
+        zero_dx();
     }
+    void quarter_circle(){count_q = true;}
 };
