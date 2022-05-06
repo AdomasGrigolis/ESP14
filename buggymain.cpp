@@ -5,9 +5,9 @@
 #include <pot.cpp>
 #include <sensor.cpp>
 
-#define SPEED_PERIOD 0.005f
-#define PID_PERIOD 0.01f
-#define DEFAULT_SPEED 8.0f//Rad/s
+#define SPEED_PERIOD 0.0005f
+#define PID_PERIOD 0.001f
+#define DEFAULT_SPEED 15.0f//Rad/s
 
 //State machine
 typedef enum {idle, init, driving, bt_interrupt, bt_driving} ProgramState;
@@ -26,7 +26,7 @@ Ticker speed_tick;
 
 TickingEncoder* wheel_left = new TickingEncoder(ENC_2_A_PIN, ENC_2_B_PIN);
 TickingEncoder* wheel_right = new TickingEncoder(ENC_1_A_PIN, ENC_1_B_PIN);
-Potentiometer* leftPot = new SamplingPotentiometer(A0, 3.3, 100.0); 
+//Potentiometer* leftPot = new SamplingPotentiometer(A0, 3.3, 100.0); 
 //Potentiometer* rightPot = new SamplingPotentiometer(A1, 3.3, 100.0);
 Car car;//Motor control
 C12832 lcd(D11, D13, D12, D7, D10);
@@ -40,7 +40,7 @@ SENSOR sen5(PC_3);//purple
 SENSOR sen6(PB_0);//orange (Power drop)
 
 //Speed controller
-float step = 0.02f;
+float step = 0.005f;
 void Speed_control(void);//Below main
 
 //PID controller
@@ -62,16 +62,38 @@ public:
     void control()
     {
         if(hm10.readable()) {
-            while(i < 5) {
+            while(i < 2) {
                 hm10_receive_buffer[i++] = hm10.getc();
             }
             i = 0;
-            if(strcmp(hm10_receive_buffer, "ROUND") == 0) {
+            if(strcmp(hm10_receive_buffer, "RO") == 0) {
                 state = bt_interrupt;
                 memset(hm10_receive_buffer, 0, 5);
             }
-            else if(strcmp(hm10_receive_buffer, "START") == 0){
+            else if(strcmp(hm10_receive_buffer, "ST") == 0){
                 if(state == idle)state = init;
+                memset(hm10_receive_buffer, 0, 5);
+            }
+            else if(strcmp(hm10_receive_buffer, "UP") == 0){
+                Kp += 0.05f;
+                memset(hm10_receive_buffer, 0, 5);
+            }
+            else if(strcmp(hm10_receive_buffer, "DP") == 0){
+                Kp -= 0.05f;
+                memset(hm10_receive_buffer, 0, 5);
+            }
+            else if(strcmp(hm10_receive_buffer, "UD") == 0){
+                Kd += 0.002f;
+                memset(hm10_receive_buffer, 0, 5);
+            }
+            else if(strcmp(hm10_receive_buffer, "DD") == 0){
+                Kd -= 0.002f;
+                memset(hm10_receive_buffer, 0, 5);
+            }
+            else if(strcmp(hm10_receive_buffer, "PT") == 0){
+                lcd.cls();
+                lcd.locate(0,10);
+                lcd.printf("Kp:%.3f||Kd:%0.5f",Kp,Kd);
                 memset(hm10_receive_buffer, 0, 5);
             }
         }
@@ -85,17 +107,15 @@ int main(void)
     bluetooth_receive.rise(&BT, &BLUETOOTH::control);//Setup for BT
     state = init;//Default starting state
     //Proportional values
-    Kp = 0.7795f;
-    Kd = 0.0088f;
+    Kp = 1.0f;//9095
+    Kd = 0.019f;//
     Ki = 0.0f;
     while(true){
 //State switch                            
     switch (state) {
         case(idle) :
-                Kp = leftPot->getCurrentSampleNorm()*2.0f;//Up to 2
-                lcd.locate(0,0);
-                lcd.printf("%.1f /100",Kp*100);
-                break;
+            wait(0.05);
+            break;
         case(init) :
                 car.setDirectionForward();
                 speed_tick.attach(&Speed_control, SPEED_PERIOD);
@@ -113,9 +133,9 @@ int main(void)
                 global_ang_speed_right = 0.0;
                 global_ang_speed_left = 0.0;
                 speed_tick.detach();
-                car.turnaround(RIGHT);//Might need to change side
+                car.turnaround(RIGHT);
                 wheel_right->quarter_circle();
-                car.setMotorSpeeds(0.8f,0.8f);
+                car.setMotorSpeeds(0.6f,0.6f);
                 state = bt_driving;
                 break;  
         case(bt_driving) :
@@ -124,9 +144,9 @@ int main(void)
         default :
                 state = idle;
                 break;
-        }
-    }
-}
+        }//End of FSM switch
+    }//End of while
+}//End of main
 
 void control_PID(void)
 {
@@ -134,27 +154,27 @@ void control_PID(void)
         float distance = 0.0f;     
 //Checking sensor states
         if (sen1.sensorState() == true){
-            distance += 3.0f;//37,3
+            distance += 5.4f;//37,3
             sensorsOn += 1;
         }
         if (sen2.sensorState() == true) {
-            distance += 2.5f;//23,2.5
+            distance += 4.4f;//23,2.5
             sensorsOn += 1;
         }
         if (sen3.sensorState() == true){
-            distance += 1.0f;//10
+            distance += 2.8f;//10
             sensorsOn += 1;
         }
         if (sen4.sensorState() == true) {
-            distance -= 1.0f;//5
+            distance -= 2.8f;//5
             sensorsOn += 1;
         }
         if (sen5.sensorState() == true) {
-            distance -= 2.5f;//19
+            distance -= 4.4f;//19
             sensorsOn += 1;
         }
         if (sen6.sensorState() == true){
-            distance -= 3.0f;//33
+            distance -= 5.4f;//33
             sensorsOn += 1;
         }
         if(sen3.sensorState() == true && sen4.sensorState() == true){
@@ -166,15 +186,15 @@ void control_PID(void)
         if (sensorsOn > 0) {
             wheel_right->line();//Alerts enc that we have a line
             distance = distance/sensorsOn;
-            float D__ = (distance - pre_error)/PID_PERIOD;
-            float D_ = D__ * Kd;
+            float D_ = (distance - pre_error)/PID_PERIOD * Kd;
             pre_error = distance;
-            float P_ = distance*Kp; //creates the p value by a given error(distance) and the controlling variable kp
-            float output = P_ + D_; //for future if I_ and D_ are implemented
+            float P_ = distance*Kp;//creates the p value by a given error(distance) and the controlling variable kp
+            float output = P_ + D_;
             if (output > 0) { //line is on the left hand side
                 global_ang_speed_left = DEFAULT_SPEED-output;//speeds up right wheel and slows left
                 global_ang_speed_right = DEFAULT_SPEED+output;
-            } else if (output < 0) { //line is on the right hand side
+            }
+            else if (output < 0) { //line is on the right hand side
                 global_ang_speed_left = DEFAULT_SPEED-output;//slows right wheel and speeds up left
                 global_ang_speed_right = DEFAULT_SPEED+output;
             }
